@@ -1,0 +1,41 @@
+stages:
+- image
+- mirror
+
+'2.6':
+  stage: image
+  image: docker:latest
+  services:
+  - docker:dind
+  script: |
+    mkdir -p ~/.docker && echo "$DOCKER_AUTH_CONFIG" >~/.docker/config.json
+    export suffix=`expr $CI_COMMIT_TAG ':' '2.6-\(.*\)'`
+    make 26
+    docker push ubleipzig/shibboleth:2.6
+    for tag in "latest" "2" "2.6-${suffix}"; do
+      docker tag ubleipzig/shibboleth:2.6 ubleipzig/shibboleth:${tag}
+      docker push ubleipzig/shibboleth:${tag}
+    done
+  tags:
+  - docker
+  only:
+  - /^2.6/
+  except:
+  - branches
+
+github_mirror:
+  stage: mirror
+  image:
+    name: alpine/git
+    entrypoint: [ "/bin/sh", "-c" ]
+  variables:
+    GIT_STRATEGY: clone
+    GIT_CHECKOUT: "false"
+  script: |
+    cd /tmp
+    git clone --mirror ${CI_REPOSITORY_URL} project
+    cd project
+    git remote add github https://${GITHUB_USER}:${GITHUB_TOKEN}@github.com/ubleipzig/shibboleth.git
+    git push --mirror github
+  tags:
+  - docker
