@@ -10,7 +10,15 @@ stages:
   script: |
     mkdir -p ~/.docker && echo "$DOCKER_AUTH_CONFIG" >~/.docker/config.json
     export suffix=`expr $CI_COMMIT_TAG ':' '2.6-\(.*\)'`
-    make 26
+    docker build --pull \
+      --build-arg HTTP_PROXY=${HTTP_PROXY} \
+      --build-arg HTTPS_PROXY=${HTTPS_PROXY} \
+      --build-arg NO_PROXY=${NO_PROXY} \
+      --build-arg http_proxy=${HTTP_PROXY} \
+      --build-arg https_proxy=${HTTPS_PROXY} \
+      --build-arg no_proxy=${NO_PROXY} \
+      -t ubleipzig/shibboleth:2.6 \
+      2.6
     docker push ubleipzig/shibboleth:2.6
     for tag in "latest" "2" "2.6-${suffix}"; do
       docker tag ubleipzig/shibboleth:2.6 ubleipzig/shibboleth:${tag}
